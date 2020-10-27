@@ -1,0 +1,45 @@
+﻿@model PasswordWallet.Models.AppViewModel
+
+<br />
+<div class="container row p-0 m-0">
+    <div class="col-6">
+        <h2 class="text-info">
+            Decrypted
+        </h2>
+    </div>
+    <div class="col-3 offset-3">
+        <a asp-action="Index" asp-controller="Passwd" class="btn btn-info form-control text-white">
+            Back to list
+        </a>
+    </div>
+    <div class="border container" style="padding: 30px;">
+        <div class="form-group row">
+            <div class="col-3">
+                <label asp-for="Passwd.Login"></label>
+            </div>
+            <div class="col-6">
+                <input asp-for="Passwd.Login" class="form-control" readonly />
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-3">
+                <label asp-for="Passwd.Password"></label>
+            </div>
+            <div class="col-6">
+                <input asp-for="Passwd.Password" class="form-control" readonly />
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-3">
+                <label asp-for="Passwd.WebAddress"></label>
+            </div>
+            <div class="col-6">
+                <input asp-for="Passwd.WebAddress" class="form-control" readonly />
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+    <script src="~/js/passwdList.js"></script>
+}

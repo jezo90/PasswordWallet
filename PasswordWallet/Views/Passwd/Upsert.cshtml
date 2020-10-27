@@ -1,0 +1,58 @@
+﻿@model PasswordWallet.Models.AppViewModel
+
+<h2 class="text-info">
+    Data
+</h2>
+<br />
+
+<div class="border container" style="padding: 30px;">
+    <form method="post" asp-action="Add">
+        @if (Model.Passwd.Id != 0)
+        {
+            <input type="hidden" asp-for="Passwd.Id" />
+        }
+        <div class="text-danger" asp-validation-summary="ModelOnly"></div>
+        <div class="form-group row">
+            <div class="col-3">
+                <label asp-for="Passwd.Login"></label>
+            </div>
+            <div class="col-6">
+                <input asp-for="Passwd.Login" class="form-control" />
+                <span asp-validation-for="Passwd.Login" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-3">
+                <label asp-for="Passwd.Password"></label>
+            </div>
+            <div class="col-6">
+                <input asp-for="Passwd.Password" class="form-control" />
+                <span asp-validation-for="Passwd.Password" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-3">
+                <label asp-for="Passwd.WebAddress"></label>
+            </div>
+            <div class="col-6">
+                <input asp-for="Passwd.WebAddress" class="form-control" />
+                <span asp-validation-for="Passwd.WebAddress" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-3 offset-3">
+                <button type="submit" class="btn btn-primary form-control">
+                    Add
+                </button>
+            </div>
+            <div class="col-3">
+                <a asp-action="Index" class="btn btn-success form-control">Back to list</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts{ 
+<partial name="_ValidationScriptsPartial" />
+}
+

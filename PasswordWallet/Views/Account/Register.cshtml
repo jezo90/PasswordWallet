@@ -1,0 +1,63 @@
+﻿@model PasswordWallet.Models.AppViewModel
+
+<h2 class="text-info">
+    Register
+</h2>
+<br />
+
+<div class="border container" style="padding: 30px;">
+    <form method="post" asp-action="Reg">
+        <div class="text-danger" asp-validation-summary="ModelOnly"></div>
+        @if (Model.User.Nickname != null)
+        {
+            <span class="text-danger">Invalid username</span>
+        }
+        <div class="form-group row">
+            <div class="col-3">
+                <label asp-for="User.Nickname"></label>
+            </div>
+            <div class="col-6">
+                <input asp-for="User.Nickname" class="form-control" />
+                <span asp-validation-for="User.Nickname" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-3">
+                <label asp-for="User.Password"></label>
+            </div>
+            <div class="col-6">
+                <input asp-for="User.Password" class="form-control" />
+                <span asp-validation-for="User.Password" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-3">
+                <label>Is Password Kept As Hash:</label>
+            </div>
+            <div class="col-6">
+                <div>
+                    <input type="radio" asp-for="User.isPasswordKeptAsHash" value="SHA512" /> SHA512
+                </div>
+                <div>
+                    <input type="radio" asp-for="User.isPasswordKeptAsHash" value="HMAC" /> HMAC
+                </div>
+                <span asp-validation-for="User.isPasswordKeptAsHash" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-3 offset-3">
+                <button type="submit" class="btn btn-primary form-control">
+                    Register
+                </button>
+            </div>
+            <div class="col-3">
+                <a asp-controller="Home" asp-action="Index" class="btn btn-success form-control">Back to home</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts{
+    <partial name="_ValidationScriptsPartial" />
+}
+
