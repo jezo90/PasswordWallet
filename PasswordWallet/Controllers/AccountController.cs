@@ -73,28 +73,10 @@ namespace PasswordWallet.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Reg()
         {
-            if (_db.Users.Where(a => a.Nickname == App.User.Nickname).FirstOrDefault<User>() == null)
+            var usersList = _db.Users.ToList();
+            if (Functions.isNickAvailable(usersList, App.User.Nickname))
             {
-                var salt = Functions.GenerateSalt();    // generate salt
-                var salt1 = Functions.StringToBytes(Functions.BytesToString(salt));
-                App.User.Salt = Functions.BytesToString(salt);  // set user salt
-                if (App.User.isPasswordKeptAsHash == "SHA512")
-                {
-                    var pepper = Functions.StringToBytes(CacheNames.pepper);    // get pepper 
-                    var passWithSalt = Functions.SHA512(App.User.Password, salt1);  // hash wit salt 
-                    var passWithSaltAndPepper = Functions.SHA512(passWithSalt, pepper); // hash with pepper
-                    App.User.Password = passWithSaltAndPepper;  // set hashed with sha user password
-                }
-                else if (App.User.isPasswordKeptAsHash == "HMAC")
-                {
-                    HMAC hmac = new HMACSHA256(salt1);  //  hash hmac
-                    App.User.Password = Functions.GenerateHMAC(App.User.Password, hmac); // set hased with hmac user password 
-                }
-                else
-                {
-                    return RedirectToAction("Register");
-                }
-                _db.Users.Add(App.User);
+                _db.Users.Add(Functions.createUser(App.User));
                 _db.SaveChanges();
                 return RedirectToAction("Login");
             }
@@ -108,34 +90,13 @@ namespace PasswordWallet.Controllers
         {
             if (_db.Users.Where(a => a.Nickname == App.User.Nickname).FirstOrDefault<User>() is User user)
             {
-                if (user.isPasswordKeptAsHash == "SHA512")
+                if (Functions.Login(user, App.User.Password))
                 {
-                    var salt = Functions.StringToBytes(user.Salt);  
-                    var pepper = Functions.StringToBytes(CacheNames.pepper);    
-                    var passWithSalt = Functions.SHA512(App.User.Password, salt);
-                    var passWithSaltAndPepper = Functions.SHA512(passWithSalt, pepper);
-
-                    if (user.Password == passWithSaltAndPepper)
-                    {
-                        _cache.Set(CacheNames.user, user);  // set cache variables 
-                        _cache.Set(CacheNames.logged, "1");
-                        _cache.Set(CacheNames.masterPassword, user.Password);
-                        _cache.Set(CacheNames.getMasterPassword, "0");
-                        return RedirectToAction("Index", "Home");
-                    }
-                }
-                else
-                {
-                    var salt = Functions.StringToBytes(user.Salt);
-                    HMAC hmac = new HMACSHA256(salt);
-                    if (user.Password == Functions.GenerateHMAC(App.User.Password, hmac))
-                    {
-                        _cache.Set(CacheNames.user, user);
-                        _cache.Set(CacheNames.logged, "1");
-                        _cache.Set(CacheNames.masterPassword, user.Password);
-                        _cache.Set(CacheNames.getMasterPassword, "0");
-                        return RedirectToAction("Index", "Home");
-                    }
+                    _cache.Set(CacheNames.user, user);  // set cache variables 
+                    _cache.Set(CacheNames.logged, "1");
+                    _cache.Set(CacheNames.masterPassword, user.Password);
+                    _cache.Set(CacheNames.getMasterPassword, "0");
+                    return RedirectToAction("Index", "Home");
                 }
             }
             AppViewModel appViewModel = new AppViewModel
@@ -160,24 +121,15 @@ namespace PasswordWallet.Controllers
         public IActionResult Change(string currentPassword, string newPassword)
         {
             User currentUser = Functions.getUser(_cache);
+            var userToChange = _db.Users.Where(a => a.Id == currentUser.Id).FirstOrDefault();
             if (currentUser.isPasswordKeptAsHash == "SHA512")
             {
-                var salt = Functions.StringToBytes(currentUser.Salt);
-                var pepper = Functions.StringToBytes(CacheNames.pepper);
-                var passWithSalt = Functions.SHA512(currentPassword, salt);
-                var passWithSaltAndPepper = Functions.SHA512(passWithSalt, pepper);
-
-                if (currentUser.Password == passWithSaltAndPepper)
+                if (Functions.Login(currentUser, currentPassword))
                 {
-                    var newsalt = Functions.GenerateSalt();
-                    var newsalt1 = Functions.StringToBytes(Functions.BytesToString(newsalt));
-                    var newPassWithSalt = Functions.SHA512(newPassword, newsalt1);
-                    var newPassWithSaltAndPepper = Functions.SHA512(newPassWithSalt, pepper);
-                    var userToChange = _db.Users.Where(a => a.Id == currentUser.Id).FirstOrDefault();
-                    userToChange.Salt = Functions.BytesToString(newsalt);
-                    userToChange.Password = newPassWithSaltAndPepper;
+                    userToChange = Functions.ChangePasswordSHA(newPassword, userToChange);
+
                     _cache.Set(CacheNames.user, userToChange);
-                    _cache.Set(CacheNames.masterPassword, newPassWithSaltAndPepper);
+                    _cache.Set(CacheNames.masterPassword, userToChange.Password);
                     _cache.Set(CacheNames.getMasterPassword, "0");
 
                     // rehash passwords
@@ -190,23 +142,15 @@ namespace PasswordWallet.Controllers
             }
             else
             {
-                var salt = Functions.StringToBytes(currentUser.Salt);
-                HMAC hmac = new HMACSHA256(salt);
-                if (currentUser.Password == Functions.GenerateHMAC(currentPassword, hmac))
+                if (Functions.Login(currentUser, currentPassword))
                 {
-                    var newsalt = Functions.GenerateSalt();
-                    var newsalt1 = Functions.StringToBytes(Functions.BytesToString(newsalt));
-                    HMAC newhmac = new HMACSHA256(newsalt1);
-                    string passwordToChange = Functions.GenerateHMAC(newPassword, newhmac);
+                    userToChange = Functions.ChangePasswordHMAC(newPassword, userToChange);
 
                     List<Passwd> passwds = _db.Passwds.Where(a => a.UserId == currentUser.Id).ToList();
-                    passwds = AESHelper.rehashPasswds(passwds, currentUser.Password, passwordToChange);
+                    passwds = AESHelper.rehashPasswds(passwds, currentUser.Password, userToChange.Password);
 
-                    var userToChange = _db.Users.Where(a => a.Id == currentUser.Id).FirstOrDefault();
-                    userToChange.Salt = Functions.BytesToString(newsalt);
-                    userToChange.Password = passwordToChange;
                     _cache.Set(CacheNames.user, userToChange);
-                    _cache.Set(CacheNames.masterPassword, passwordToChange);
+                    _cache.Set(CacheNames.masterPassword, userToChange.Password);
                     _cache.Set(CacheNames.getMasterPassword, "0");
 
                     _db.SaveChanges();
@@ -215,48 +159,6 @@ namespace PasswordWallet.Controllers
             }
 
             return RedirectToAction("ChangePassword");
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Reset(string nickname, string newPassword)
-        {
-            User currentUser = _db.Users.Where(a => a.Nickname == nickname).FirstOrDefault<User>();
-            var pepper = Functions.StringToBytes(CacheNames.pepper);
-            if (currentUser.isPasswordKeptAsHash == "SHA512")
-            {
-                var newsalt = Functions.GenerateSalt();
-                var newsalt1 = Functions.StringToBytes(Functions.BytesToString(newsalt));
-                var newPassWithSalt = Functions.SHA512(newPassword, newsalt1);
-                var newPassWithSaltAndPepper = Functions.SHA512(newPassWithSalt, pepper);
-
-                List<Passwd> passwds = _db.Passwds.Where(a => a.UserId == currentUser.Id).ToList();
-                passwds = AESHelper.rehashPasswds(passwds, currentUser.Password, newPassWithSaltAndPepper);
-
-                var userToChange = _db.Users.Where(a => a.Id == currentUser.Id).FirstOrDefault();
-                userToChange.Salt = Functions.BytesToString(newsalt);
-                userToChange.Password = newPassWithSaltAndPepper;
-
-                _db.SaveChanges();
-            }
-            else
-            {
-                var newsalt = Functions.GenerateSalt();
-                var newsalt1 = Functions.StringToBytes(Functions.BytesToString(newsalt));
-                HMAC newhmac = new HMACSHA256(newsalt1);
-                string nPass = Functions.GenerateHMAC(newPassword, newhmac);
-
-                List<Passwd> passwds = _db.Passwds.Where(a => a.UserId == currentUser.Id).ToList();
-                passwds = AESHelper.rehashPasswds(passwds, currentUser.Password, nPass);
-
-                var userToChange = _db.Users.Where(a => a.Id == currentUser.Id).FirstOrDefault();
-                userToChange.Salt = Functions.BytesToString(newsalt);
-                userToChange.Password = nPass;
-
-                _db.SaveChanges();
-            }
-
-            return RedirectToAction("Index", "Home");
         }
     }
 }

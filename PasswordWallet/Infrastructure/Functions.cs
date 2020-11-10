@@ -114,5 +114,90 @@ namespace PasswordWallet.Infrastructure
         {
             return Convert.ToBase64String(zm1);
         }
+
+        public static bool Login(User user, string password)
+        {
+            if (user.isPasswordKeptAsHash == "SHA512")
+            {
+                var salt = Functions.StringToBytes(user.Salt);
+                var pepper = Functions.StringToBytes(CacheNames.pepper);
+                var passWithSalt = Functions.SHA512(password, salt);
+                var passWithSaltAndPepper = Functions.SHA512(passWithSalt, pepper);
+
+                if (user.Password == passWithSaltAndPepper)
+                {
+                    return true;
+                }
+                return false;
+            }
+            else
+            {
+                var salt = Functions.StringToBytes(user.Salt);
+                HMAC hmac = new HMACSHA256(salt);
+                if (user.Password == Functions.GenerateHMAC(password, hmac))
+                {
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        public static bool isNickAvailable(List<User> usersList, string nick)
+        {
+            if (usersList.Where(a => a.Nickname == nick).FirstOrDefault<User>() == null)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public static User createUser(User registerUser)
+        {
+            User newUser = registerUser;
+            var salt = Functions.GenerateSalt();    // generate salt
+            var salt1 = Functions.StringToBytes(Functions.BytesToString(salt));
+            newUser.Salt = Functions.BytesToString(salt);  // set user salt
+            if (registerUser.isPasswordKeptAsHash == "SHA512")
+            {
+                var pepper = Functions.StringToBytes(CacheNames.pepper);    // get pepper 
+                var passWithSalt = Functions.SHA512(registerUser.Password, salt1);  // hash wit salt 
+                var passWithSaltAndPepper = Functions.SHA512(passWithSalt, pepper); // hash with pepper
+                newUser.Password = passWithSaltAndPepper;  // set hashed with sha user password
+            }
+            else if (registerUser.isPasswordKeptAsHash == "HMAC")
+            {
+                HMAC hmac = new HMACSHA256(salt1);  //  hash hmac
+                newUser.Password = Functions.GenerateHMAC(registerUser.Password, hmac); // set hased with hmac user password 
+            }
+            return newUser;
+        }
+
+        public static User ChangePasswordSHA(string newPassword, User userToChange)
+        {
+            var newsalt = Functions.GenerateSalt();
+            var newsalt1 = Functions.StringToBytes(Functions.BytesToString(newsalt));
+            var newPassWithSalt = Functions.SHA512(newPassword, newsalt1);
+            var newPassWithSaltAndPepper = Functions.SHA512(newPassWithSalt, Functions.StringToBytes(CacheNames.pepper));
+
+            userToChange.Salt = Functions.BytesToString(newsalt);
+            userToChange.Password = newPassWithSaltAndPepper;
+
+            return userToChange;
+        }
+        public static User ChangePasswordHMAC(string newPassword, User userToChange)
+        {
+            var newsalt = Functions.GenerateSalt();
+            var newsalt1 = Functions.StringToBytes(Functions.BytesToString(newsalt));
+            HMAC newhmac = new HMACSHA256(newsalt1);
+            string passwordToChange = Functions.GenerateHMAC(newPassword, newhmac);
+
+            userToChange.Salt = Functions.BytesToString(newsalt);
+            userToChange.Password = passwordToChange;
+
+            return userToChange;
+        }
     }
 }
