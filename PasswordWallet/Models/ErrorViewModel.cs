@@ -1,5 +1,3 @@
-using System;
-
 namespace PasswordWallet.Models
 {
     public class ErrorViewModel

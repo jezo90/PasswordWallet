@@ -1,10 +1,8 @@
 ﻿using PasswordWallet.Models;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace PasswordWallet.Infrastructure
 {
@@ -46,7 +44,7 @@ namespace PasswordWallet.Infrastructure
 
         public static List<Passwd> rehashPasswds(List<Passwd> passwordsToChange, string currentMaster, string newMaster)
         {
-            foreach(Passwd passwd in passwordsToChange)
+            foreach (Passwd passwd in passwordsToChange)
             {
                 passwd.Password = DecryptToString(Convert.FromBase64String(passwd.Password), currentMaster); // decrypt with current password
                 passwd.Password = Convert.ToBase64String(EncryptString(passwd.Password, newMaster)); // encrypt with new password

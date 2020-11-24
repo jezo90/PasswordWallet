@@ -10,8 +10,10 @@
         <div class="text-danger" asp-validation-summary="ModelOnly"></div>
         @if (Model.User.Nickname != null)
         {
-            <span class="text-danger">Invalid username or password</span>
+            <span class="text-danger">Invalid username or password</span><br />
         }
+        <span class="text-danger">@Model.Error</span> <br />
+        <span class="text-danger">@Model.Error2</span>
         <div class="form-group row">
             <div class="col-3">
                 <label asp-for="User.Nickname"></label>

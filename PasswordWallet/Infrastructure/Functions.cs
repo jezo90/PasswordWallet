@@ -1,12 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.Extensions.Caching.Memory;
+﻿using Microsoft.Extensions.Caching.Memory;
 using PasswordWallet.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace PasswordWallet.Infrastructure
 {
@@ -115,29 +113,65 @@ namespace PasswordWallet.Infrastructure
             return Convert.ToBase64String(zm1);
         }
 
+        public static User UnblockUser(User user)
+        {
+            if (user.AccountBlockDate < DateTime.Now)
+            {
+                user.IsAccountBlocked = false;
+            }
+            return user;
+        }
+
+        public static bool IsUserBlocked(User user)
+        {
+            return user.IsAccountBlocked;
+        }
+
+        public static bool IsIpBlocked(AddressIP ip)
+        {
+            return (ip.IpBlockDate < DateTime.Now);
+        }
+
+        public static AddressIP UnblockIP(AddressIP ip)
+        {
+            ip.Correct = 0;
+            ip.Incorrect = 0;
+            ip.IpBlockDate = DateTime.Now.AddMinutes(-1);
+            return ip;
+        }
+
         public static bool Login(User user, string password)
         {
-            if (user.isPasswordKeptAsHash == "SHA512")
-            {
-                var salt = Functions.StringToBytes(user.Salt);
-                var pepper = Functions.StringToBytes(CacheNames.pepper);
-                var passWithSalt = Functions.SHA512(password, salt);
-                var passWithSaltAndPepper = Functions.SHA512(passWithSalt, pepper);
+            user = UnblockUser(user);
 
-                if (user.Password == passWithSaltAndPepper)
+            if (!IsUserBlocked(user))
+            {
+                if (user.isPasswordKeptAsHash == "SHA512")
                 {
-                    return true;
+                    var salt = Functions.StringToBytes(user.Salt);
+                    var pepper = Functions.StringToBytes(CacheNames.pepper);
+                    var passWithSalt = Functions.SHA512(password, salt);
+                    var passWithSaltAndPepper = Functions.SHA512(passWithSalt, pepper);
+
+                    if (user.Password == passWithSaltAndPepper)
+                    {
+                        return true;
+                    }
+                    return false;
                 }
-                return false;
+                else
+                {
+                    var salt = Functions.StringToBytes(user.Salt);
+                    HMAC hmac = new HMACSHA256(salt);
+                    if (user.Password == Functions.GenerateHMAC(password, hmac))
+                    {
+                        return true;
+                    }
+                    return false;
+                }
             }
             else
             {
-                var salt = Functions.StringToBytes(user.Salt);
-                HMAC hmac = new HMACSHA256(salt);
-                if (user.Password == Functions.GenerateHMAC(password, hmac))
-                {
-                    return true;
-                }
                 return false;
             }
         }

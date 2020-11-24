@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace PasswordWallet.Models
 {
@@ -19,10 +17,15 @@ namespace PasswordWallet.Models
 
         [Required]
         public string Salt { get; set; }
-        
+
         [Required]
         public string isPasswordKeptAsHash { get; set; }
-        public List<Passwd> Passwds { get; set; }
+
+        public bool IsAccountBlocked { get; set; }
+        public DateTime AccountBlockDate { get; set; }
+
+        public virtual ICollection<Passwd> Passwds { get; set; }
+        public virtual ICollection<LoginAttempt> LoginAttempts { get; set; }
 
     }
 }
