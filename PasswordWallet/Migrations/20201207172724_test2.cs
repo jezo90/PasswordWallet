@@ -2,7 +2,7 @@
 
 namespace PasswordWallet.Migrations
 {
-    public partial class relacje : Migration
+    public partial class test2 : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {

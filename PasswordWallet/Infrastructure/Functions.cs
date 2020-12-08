@@ -20,6 +20,22 @@ namespace PasswordWallet.Infrastructure
             return Usr;
         }
 
+        public static string getError(IMemoryCache cache, string name)
+        {
+            var error = cache.Get(name);
+            if (error == null)
+            {
+                error = "";
+            }
+            return error.ToString();
+        }
+
+        public static string getMode(IMemoryCache cache)
+        {
+            string mode = cache.Get(CacheNames.readMode).ToString();
+            return mode;
+        }
+
         public static string getLogged(IMemoryCache cache)
         {
             string logged1 = "0";

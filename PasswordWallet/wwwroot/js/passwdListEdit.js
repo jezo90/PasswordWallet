@@ -20,7 +20,7 @@ function loadDataTable() {
                 "render": function (data) {
                     return `<div class="text-center">
                         <a class='btn btn-success text-white' style='cursor:pointer; width:90px;'
-                            onclick=Delete('/passwd/read?id='+${data})>
+                            href="/passwd/editpassword?id=${data}">
                             Edit
                         </a>
                         <a class='btn btn-primary text-white' style='cursor:pointer; width:90px;'
@@ -32,7 +32,7 @@ function loadDataTable() {
                             Decrypt
                         </a>
                         <a class='btn btn-danger text-white' style='cursor:pointer; width:70px;'
-                            onclick=Delete('/passwd/read?id='+${data})>
+                            onclick=Delete('/passwd/delete?id='+${data})>
                             Delete
                         </a>
                         </div>`;
@@ -57,19 +57,28 @@ function All(url) {
 
 }
 
-
 function Delete(url) {
-    $.ajax({
-        type: "DELETE",
-        url: url,
-        success: function (data) {
-            if (data.success) {
-                toastr.success(data.message);
-                dataTable.ajax.reload();
-            }
-            else {
-                toastr.error(data.message);
-            }
+    swal({
+        title: "Are You sure?",
+        text: "Once deleted, you will not be able to recover",
+        icon: "warning",
+        buttons: true,
+        dangermode: true
+    }).then((willDelete) => {
+        if (willDelete) {
+            $.ajax({
+                type: "DELETE",
+                url: url,
+                success: function (data) {
+                    if (data.success) {
+                        toastr.success(data.message);
+                        dataTable.ajax.reload();
+                    }
+                    else {
+                        toastr.error(data.message);
+                    }
+                }
+            })
         }
     })
 }

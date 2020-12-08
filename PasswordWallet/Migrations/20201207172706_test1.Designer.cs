@@ -10,8 +10,8 @@ using PasswordWallet.Models;
 namespace PasswordWallet.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20201123095447_attempts2")]
-    partial class attempts2
+    [Migration("20201207172706_test1")]
+    partial class test1
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -38,12 +38,12 @@ namespace PasswordWallet.Migrations
                     b.Property<int>("Incorrect")
                         .HasColumnType("int");
 
-                    b.Property<bool>("Successful")
-                        .HasColumnType("bit");
+                    b.Property<DateTime>("IpBlockDate")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
-                    b.ToTable("AddressIP");
+                    b.ToTable("AddressIPs");
                 });
 
             modelBuilder.Entity("PasswordWallet.Models.LoginAttempt", b =>
@@ -53,8 +53,9 @@ namespace PasswordWallet.Migrations
                         .HasColumnType("int")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                    b.Property<int>("AddressIpId")
-                        .HasColumnType("int");
+                    b.Property<string>("AddressIp")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Attempt")
                         .HasColumnType("int");
@@ -70,11 +71,9 @@ namespace PasswordWallet.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AddressIpId");
-
                     b.HasIndex("UserId");
 
-                    b.ToTable("LoginAttempt");
+                    b.ToTable("LoginAttempts");
                 });
 
             modelBuilder.Entity("PasswordWallet.Models.Passwd", b =>
@@ -104,12 +103,38 @@ namespace PasswordWallet.Migrations
                     b.ToTable("Passwds");
                 });
 
+            modelBuilder.Entity("PasswordWallet.Models.SharedPasswd", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<int>("PasswdId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserOwnerId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserSharedId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PasswdId");
+
+                    b.ToTable("SharedPasswds");
+                });
+
             modelBuilder.Entity("PasswordWallet.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<DateTime>("AccountBlockDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<bool>("IsAccountBlocked")
                         .HasColumnType("bit");
@@ -137,12 +162,6 @@ namespace PasswordWallet.Migrations
 
             modelBuilder.Entity("PasswordWallet.Models.LoginAttempt", b =>
                 {
-                    b.HasOne("PasswordWallet.Models.AddressIP", "AddressIP")
-                        .WithMany("LoginAttempts")
-                        .HasForeignKey("AddressIpId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("PasswordWallet.Models.User", "User")
                         .WithMany("LoginAttempts")
                         .HasForeignKey("UserId")
@@ -155,6 +174,15 @@ namespace PasswordWallet.Migrations
                     b.HasOne("PasswordWallet.Models.User", "User")
                         .WithMany("Passwds")
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PasswordWallet.Models.SharedPasswd", b =>
+                {
+                    b.HasOne("PasswordWallet.Models.Passwd", "Passwd")
+                        .WithMany("SharedPasswds")
+                        .HasForeignKey("PasswdId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

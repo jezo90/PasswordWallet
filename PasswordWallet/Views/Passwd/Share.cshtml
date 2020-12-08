@@ -1,0 +1,32 @@
+﻿@model PasswordWallet.Models.AppViewModel
+
+<h2 class="text-info">
+    Share password
+</h2>
+<br />
+
+<div class="border container" style="padding: 30px;">
+    <form method="post" asp-action="ShareToUser">
+        <span class="text-danger">@Model.Error</span> <br />
+        <div class="form-group row">
+            <input type="hidden" name="id" value="@Model.Passwd.Id" />
+            <div class="col-3">
+                <label>User nickname:</label>
+            </div>
+            <div class="col-6">
+                <input name="username" class="form-control" />
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-6 offset-3">
+                <button type="submit" class="btn btn-primary form-control">
+                    Share with user
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts{
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -24,8 +24,8 @@ namespace PasswordWallet.Models
         public bool IsAccountBlocked { get; set; }
         public DateTime AccountBlockDate { get; set; }
 
-        public virtual ICollection<Passwd> Passwds { get; set; }
-        public virtual ICollection<LoginAttempt> LoginAttempts { get; set; }
+        public List<Passwd> Passwds { get; set; }
+        public List<LoginAttempt> LoginAttempts { get; set; }
 
     }
 }

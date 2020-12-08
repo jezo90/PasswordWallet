@@ -8,6 +8,8 @@ namespace PasswordWallet.Models
         {
 
         }
+
+        public DbSet<SharedPasswd> SharedPasswds { get; set; }
         public DbSet<Passwd> Passwds { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<LoginAttempt> LoginAttempts { get; set; }

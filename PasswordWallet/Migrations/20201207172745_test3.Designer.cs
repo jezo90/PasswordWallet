@@ -10,8 +10,8 @@ using PasswordWallet.Models;
 namespace PasswordWallet.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20201123091222_attempts")]
-    partial class attempts
+    [Migration("20201207172745_test3")]
+    partial class test3
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -21,6 +21,31 @@ namespace PasswordWallet.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128)
                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
+            modelBuilder.Entity("PasswordWallet.Models.AddressIP", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Correct")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Incorrect")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("IpBlockDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AddressIPs");
+                });
+
             modelBuilder.Entity("PasswordWallet.Models.LoginAttempt", b =>
                 {
                     b.Property<int>("Id")
@@ -28,7 +53,7 @@ namespace PasswordWallet.Migrations
                         .HasColumnType("int")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                    b.Property<string>("AddressIP")
+                    b.Property<string>("AddressIp")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -48,7 +73,7 @@ namespace PasswordWallet.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("LoginAttempt");
+                    b.ToTable("LoginAttempts");
                 });
 
             modelBuilder.Entity("PasswordWallet.Models.Passwd", b =>
@@ -78,12 +103,36 @@ namespace PasswordWallet.Migrations
                     b.ToTable("Passwds");
                 });
 
+            modelBuilder.Entity("PasswordWallet.Models.SharedPasswd", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<int>("PasswdId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserOwnerId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserSharedId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SharedPasswds");
+                });
+
             modelBuilder.Entity("PasswordWallet.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<DateTime>("AccountBlockDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<bool>("IsAccountBlocked")
                         .HasColumnType("bit");

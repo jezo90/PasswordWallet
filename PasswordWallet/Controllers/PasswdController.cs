@@ -4,6 +4,7 @@ using Microsoft.Extensions.Caching.Memory;
 using PasswordWallet.Infrastructure;
 using PasswordWallet.Models;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
@@ -26,12 +27,109 @@ namespace PasswordWallet.Controllers
 
         public IActionResult Index()
         {
+            string readMode = Functions.getMode(_cache);
+            if (readMode == "1")
+            {
+                return RedirectToAction("EditMode");
+            }
+
             AppViewModel appViewModel = new AppViewModel
             {
                 User = Functions.getUser(_cache),
-                Logged = Functions.getLogged(_cache)
+                Logged = Functions.getLogged(_cache),
+                Error = Functions.getError(_cache, CacheNames.error4)
             };
+
+            _cache.Remove(CacheNames.error4);
             return View(appViewModel);
+        }
+
+        public IActionResult SetEditMode()
+        {
+            _cache.Set(CacheNames.readMode, "1");
+            return RedirectToAction("EditMode");
+        }
+
+        public IActionResult SetReadMode()
+        {
+            _cache.Set(CacheNames.readMode, "0");
+            return RedirectToAction("Index");
+        }
+
+        public IActionResult EditMode()
+        {
+            string readMode = Functions.getMode(_cache);
+            if (readMode != "1")
+            {
+                return RedirectToAction("Index");
+            }
+
+            AppViewModel appViewModel = new AppViewModel
+            {
+                User = Functions.getUser(_cache),
+                Logged = Functions.getLogged(_cache),
+                Error = Functions.getError(_cache, CacheNames.error4)
+            };
+
+            _cache.Remove(CacheNames.error4);
+            return View(appViewModel);
+        }
+
+        public IActionResult Share(int id)
+        {
+            User userOwner = Functions.getUser(_cache);
+            Passwd passwd = _db.Passwds.Where(a => a.Id == id).FirstOrDefault();
+
+            if (userOwner.Id != passwd.UserId)
+            {
+                _cache.Set(CacheNames.error4, "You are not the owner");
+                return RedirectToAction("Index");
+            }
+
+            AppViewModel appViewModel = new AppViewModel
+            {
+                User = Functions.getUser(_cache),
+                Logged = Functions.getLogged(_cache),
+                Passwd = _db.Passwds.Where(a => a.Id == id).FirstOrDefault(),
+                Error = Functions.getError(_cache, CacheNames.error3)
+            };
+            _cache.Remove(CacheNames.error3);
+            return View(appViewModel);
+        }
+
+        public IActionResult ShareToUser(string username, int id)
+        {
+            User userOwner = Functions.getUser(_cache);
+            Passwd passwd = _db.Passwds.Where(a => a.Id == id).FirstOrDefault();
+            User userToShare = _db.Users.Where(a => a.Nickname == username).FirstOrDefault();
+            SharedPasswd shared = _db.SharedPasswds.Where(a => a.PasswdId == id && a.UserSharedId == userToShare.Id).FirstOrDefault();
+            if (userToShare == null)
+            {
+                _cache.Set(CacheNames.error3, "There is no users with that nickname");
+                return RedirectToAction("Share", new { id });
+            }
+            if (shared != null)
+            {
+                _cache.Set(CacheNames.error3, "You are already sharing password with that user");
+                return RedirectToAction("Share", new { id });
+            }
+            if (username == userOwner.Nickname)
+            {
+                _cache.Set(CacheNames.error3, "You can't share password with that user");
+                return RedirectToAction("Share", new { id });
+            }
+            if (userOwner.Id == passwd.UserId)
+            {
+                SharedPasswd passToShare = new SharedPasswd()
+                {
+                    PasswdId = passwd.Id,
+                    UserOwnerId = userOwner.Id,
+                    UserSharedId = userToShare.Id
+                };
+                _db.SharedPasswds.Add(passToShare);
+                _db.SaveChanges();
+            }
+            return RedirectToAction("Index");
         }
 
         public IActionResult Upsert()
@@ -63,8 +161,25 @@ namespace PasswordWallet.Controllers
                 return RedirectToAction("MasterPassword");
             }
             Passwd toDecrypt = _db.Passwds.Where(a => a.Id == id).FirstOrDefault(); // get password to decrypt by id
+            User usr = Functions.getUser(_cache);
+            if (toDecrypt.UserId != usr.Id)
+            {
+                var sharedPass = _db.SharedPasswds.Where(a => a.UserSharedId == usr.Id).ToList();
+                List<int> ids = new List<int>();
+
+                foreach (SharedPasswd sPass in sharedPass)
+                {
+                    ids.Add(sPass.PasswdId);
+                }
+
+                if (!ids.Contains(toDecrypt.Id))
+                {
+                    return RedirectToAction("Index");
+                }
+            }
             var decrypt = Convert.FromBase64String(toDecrypt.Password); // covnvert string into byte[] to decrypt 
-            toDecrypt.Password = AESHelper.DecryptToString(decrypt, _cache.Get(CacheNames.masterPassword).ToString());  // decrypting password
+            var passwordOwner = _db.Users.Where(a => a.Id == toDecrypt.UserId).FirstOrDefault();
+            toDecrypt.Password = AESHelper.DecryptToString(decrypt, passwordOwner.Password);  // decrypting password
 
             AppViewModel appViewModel = new AppViewModel
             {
@@ -74,6 +189,57 @@ namespace PasswordWallet.Controllers
             };
 
             return View(appViewModel);
+        }
+
+        public IActionResult EditPassword(int id)
+        {
+            if (_cache.Get(CacheNames.getMasterPassword).ToString() != "1") // ask user for masterpassword first time
+            {
+                return RedirectToAction("MasterPassword");
+            }
+            Passwd toEdit = _db.Passwds.Where(a => a.Id == id).FirstOrDefault(); // get password to decrypt by id
+            User usr = Functions.getUser(_cache);
+            if (toEdit.UserId != usr.Id)
+            {
+                _cache.Set(CacheNames.error4, "You can't edit that password");
+                return RedirectToAction("Index");
+            }
+            var edit = Convert.FromBase64String(toEdit.Password); // covnvert string into byte[] to decrypt 
+            var passwordOwner = _db.Users.Where(a => a.Id == toEdit.UserId).FirstOrDefault();
+            toEdit.Password = AESHelper.DecryptToString(edit, passwordOwner.Password);  // decrypting password
+
+            AppViewModel appViewModel = new AppViewModel
+            {
+                User = Functions.getUser(_cache),
+                Logged = Functions.getLogged(_cache),
+                Passwd = toEdit
+            };
+
+            return View(appViewModel);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Edit()
+        {
+            var password = _db.Passwds.Where(a => a.Id == Passwd.Id).FirstOrDefault();
+
+            if (password.UserId == Functions.getUser(_cache).Id)
+            {
+                if (ModelState.IsValid)
+                {
+                    var masterPassword = _cache.Get(CacheNames.masterPassword).ToString(); // get current user masterpassword
+                    var encrypted = AESHelper.EncryptString(Passwd.Password, masterPassword); // encrypt with masterpassword
+                    password.Password = Convert.ToBase64String(encrypted); // add encypted password as a string to variable
+                    password.WebAddress = Passwd.WebAddress;
+                    password.Login = Passwd.Login;
+                    _db.SaveChanges(); // save database
+                    return RedirectToAction("Index");
+                }
+                return View(Passwd);
+            }
+            _cache.Set(CacheNames.error4, "You are not the owner");
+            return RedirectToAction("Index");            
         }
 
         [HttpPost]
@@ -135,20 +301,51 @@ namespace PasswordWallet.Controllers
         public async Task<IActionResult> GetAll()
         {
             User usr = Functions.getUser(_cache); // get logged user 
-            return Json(new { data = await _db.Passwds.Where(a => a.UserId == usr.Id).ToListAsync() }); // return his passwords
+            var data1 = await _db.Passwds.Where(a => a.UserId == usr.Id).ToListAsync();
+            var data2 = await _db.SharedPasswds.Where(a => a.UserSharedId == usr.Id).ToListAsync();
+            foreach (SharedPasswd pass in data2)
+            {
+                data1.Add(_db.Passwds.Where(a => a.Id == pass.PasswdId).FirstOrDefault());
+            }
+            return Json(new { data = data1.ToList() }); // return his passwords
         }
+
 
         [HttpDelete]
         public async Task<IActionResult> Delete(int id)
         {
+            User usr = Functions.getUser(_cache); // get logged user 
             var passwdFromDb = await _db.Passwds.FirstOrDefaultAsync(a => a.Id == id); // get password with delivered id 
-            if (passwdFromDb == null)
+            SharedPasswd sharedPassword = _db.SharedPasswds.Where(a => a.PasswdId == passwdFromDb.Id &&
+                                                                  a.UserSharedId == usr.Id).FirstOrDefault();
+
+            if (passwdFromDb.UserId == usr.Id)
             {
-                return Json(new { success = false, message = "Error while deleting" });
+                if (passwdFromDb == null)
+                {
+                    return Json(new { success = false, message = "Error while deleting" });
+                }
+                _db.Passwds.Remove(passwdFromDb);
+                await _db.SaveChangesAsync();
+                return Json(new { success = true, message = "Delete successful" });
             }
-            _db.Passwds.Remove(passwdFromDb);
-            await _db.SaveChangesAsync();
-            return Json(new { success = true, message = "Delete successful" });
+            else if (sharedPassword.UserSharedId == usr.Id)
+            {
+                if (sharedPassword == null)
+                {
+                    return Json(new { success = false, message = "Error while deleting" });
+                }
+                _db.SharedPasswds.Remove(sharedPassword);
+                await _db.SaveChangesAsync();
+                return Json(new { success = true, message = "Password is no longer shared" });
+            }
+            return Json(new { success = false, message = "Error while deleting" });
+        }
+
+        [HttpDelete]
+        public async Task<IActionResult> Read(int id)
+        {
+            return Json(new { success = false, message = "You have to switch to the edit mode to modify" });
         }
         #endregion
     }

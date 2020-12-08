@@ -23,6 +23,10 @@ namespace PasswordWallet
             services.AddMemoryCache();
             services.AddDbContext<ApplicationDbContext>(
                     options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+
+            services.AddControllersWithViews().AddNewtonsoftJson(options =>
+                    options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
+
             services.AddControllersWithViews().AddRazorRuntimeCompilation();
         }
 

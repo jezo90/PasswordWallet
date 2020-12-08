@@ -10,8 +10,8 @@ using PasswordWallet.Models;
 namespace PasswordWallet.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20201123105339_zmiany")]
-    partial class zmiany
+    [Migration("20201207172724_test2")]
+    partial class test2
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -103,6 +103,29 @@ namespace PasswordWallet.Migrations
                     b.ToTable("Passwds");
                 });
 
+            modelBuilder.Entity("PasswordWallet.Models.SharedPasswd", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<int>("PasswdId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserOwnerId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserSharedId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PasswdId");
+
+                    b.ToTable("SharedPasswds");
+                });
+
             modelBuilder.Entity("PasswordWallet.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -151,6 +174,15 @@ namespace PasswordWallet.Migrations
                     b.HasOne("PasswordWallet.Models.User", "User")
                         .WithMany("Passwds")
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PasswordWallet.Models.SharedPasswd", b =>
+                {
+                    b.HasOne("PasswordWallet.Models.Passwd", null)
+                        .WithMany("SharedPasswds")
+                        .HasForeignKey("PasswdId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

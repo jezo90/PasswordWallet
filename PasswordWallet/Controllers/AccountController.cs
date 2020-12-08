@@ -135,7 +135,8 @@ namespace PasswordWallet.Controllers
                         _db.LoginAttempts.Add(loginAttempt);
                         _db.SaveChanges();
 
-                        _cache.Set(CacheNames.user, user);  // set cache variables 
+                        _cache.Set(CacheNames.readMode, "0");  // set cache variables 
+                        _cache.Set(CacheNames.user, user);  
                         _cache.Set(CacheNames.logged, "1");
                         _cache.Set(CacheNames.masterPassword, user.Password);
                         _cache.Set(CacheNames.getMasterPassword, "0");
@@ -204,6 +205,7 @@ namespace PasswordWallet.Controllers
 
         public IActionResult Logout()
         {
+            _cache.Remove(CacheNames.readMode);
             _cache.Remove(CacheNames.user);
             _cache.Remove(CacheNames.logged);
             _cache.Remove(CacheNames.masterPassword);

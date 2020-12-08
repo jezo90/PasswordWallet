@@ -10,8 +10,8 @@ using PasswordWallet.Models;
 namespace PasswordWallet.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20201123101137_rel")]
-    partial class rel
+    [Migration("20201207133016_sharedpassword")]
+    partial class sharedpassword
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -35,11 +35,11 @@ namespace PasswordWallet.Migrations
                     b.Property<int>("Correct")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("datetime2");
-
                     b.Property<int>("Incorrect")
                         .HasColumnType("int");
+
+                    b.Property<DateTime>("IpBlockDate")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
@@ -103,12 +103,39 @@ namespace PasswordWallet.Migrations
                     b.ToTable("Passwds");
                 });
 
+            modelBuilder.Entity("PasswordWallet.Models.SharedPasswd", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<string>("AccessType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PasswdId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserOwnerId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserSharedId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SharedPasswds");
+                });
+
             modelBuilder.Entity("PasswordWallet.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<DateTime>("AccountBlockDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<bool>("IsAccountBlocked")
                         .HasColumnType("bit");
