@@ -133,6 +133,15 @@ namespace PasswordWallet.Controllers
                         address.Incorrect = 0;
 
                         _db.LoginAttempts.Add(loginAttempt);
+
+                        ActionType actionType = new ActionType()
+                        {
+                            Action = "Log in",
+                            UserId = user.Id,
+                            Time = DateTime.Now
+                        };
+                        Functions.AddActionToDatabase(_db, actionType);
+
                         _db.SaveChanges();
 
                         _cache.Set(CacheNames.readMode, "0");  // set cache variables 
@@ -205,6 +214,14 @@ namespace PasswordWallet.Controllers
 
         public IActionResult Logout()
         {
+            ActionType actionType = new ActionType()
+            {
+                Action = "Log out",
+                UserId = Functions.getUser(_cache).Id,
+                Time = DateTime.Now
+            };
+            Functions.AddActionToDatabase(_db, actionType);
+
             _cache.Remove(CacheNames.readMode);
             _cache.Remove(CacheNames.user);
             _cache.Remove(CacheNames.logged);

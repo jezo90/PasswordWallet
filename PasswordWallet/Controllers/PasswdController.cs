@@ -177,6 +177,15 @@ namespace PasswordWallet.Controllers
                     return RedirectToAction("Index");
                 }
             }
+
+            ActionType actionType = new ActionType()
+            {
+                Action = "Decrypt password id=" + id,
+                UserId = usr.Id,
+                Time = DateTime.Now
+            };
+            Functions.AddActionToDatabase(_db, actionType);
+
             var decrypt = Convert.FromBase64String(toDecrypt.Password); // covnvert string into byte[] to decrypt 
             var passwordOwner = _db.Users.Where(a => a.Id == toDecrypt.UserId).FirstOrDefault();
             toDecrypt.Password = AESHelper.DecryptToString(decrypt, passwordOwner.Password);  // decrypting password
@@ -218,6 +227,26 @@ namespace PasswordWallet.Controllers
             return View(appViewModel);
         }
 
+        public IActionResult History(int id)
+        {
+            Passwd toEdit = _db.Passwds.Where(a => a.Id == id).FirstOrDefault(); // get password to decrypt by id
+            User usr = Functions.getUser(_cache);
+            if (toEdit.UserId != usr.Id)
+            {
+                _cache.Set(CacheNames.error4, "You can't check history");
+                return RedirectToAction("Index");
+            }
+
+            AppViewModel appViewModel = new AppViewModel
+            {
+                User = Functions.getUser(_cache),
+                Logged = Functions.getLogged(_cache),
+                Passwd = toEdit
+            };
+
+            return View(appViewModel);
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Edit()
@@ -228,18 +257,67 @@ namespace PasswordWallet.Controllers
             {
                 if (ModelState.IsValid)
                 {
+                    var oldPassword = password.Password;
                     var masterPassword = _cache.Get(CacheNames.masterPassword).ToString(); // get current user masterpassword
                     var encrypted = AESHelper.EncryptString(Passwd.Password, masterPassword); // encrypt with masterpassword
                     password.Password = Convert.ToBase64String(encrypted); // add encypted password as a string to variable
                     password.WebAddress = Passwd.WebAddress;
                     password.Login = Passwd.Login;
+
+                    ActionType actionType = new ActionType()
+                    {
+                        Action = "Edit password id=" + password.Id,
+                        UserId = password.UserId,
+                        Time = DateTime.Now
+                    };
+                    Functions.AddActionToDatabase(_db, actionType);
+
+                    PasswdHistory passwdHistory = new PasswdHistory()
+                    {
+                        NewPasswd = password.Password,
+                        OldPasswd = oldPassword,
+                        Time = DateTime.Now,
+                        UserId = password.UserId,
+                        PasswdId = password.Id
+                    };
+
+
+                    Functions.AddHistoryToDatabase(_db, passwdHistory);
+
                     _db.SaveChanges(); // save database
                     return RedirectToAction("Index");
                 }
                 return View(Passwd);
             }
             _cache.Set(CacheNames.error4, "You are not the owner");
-            return RedirectToAction("Index");            
+            return RedirectToAction("Index");
+        }
+
+        public IActionResult Recover(int id, int passwordId)
+        {
+            var password = _db.Passwds.Where(a => a.Id == passwordId).FirstOrDefault();
+            var passToUpdate = _db.PasswdHistories.Where(a => a.Id == id).FirstOrDefault();
+
+            if (password.UserId == Functions.getUser(_cache).Id)
+            {
+                PasswdHistory passwdHistory = new PasswdHistory()
+                {
+                    NewPasswd = passToUpdate.OldPasswd,
+                    OldPasswd = password.Password,
+                    Time = DateTime.Now,
+                    UserId = password.UserId,
+                    PasswdId = password.Id
+                };
+                Functions.AddHistoryToDatabase(_db, passwdHistory);
+
+                password.Password = passToUpdate.OldPasswd;
+
+
+                _db.SaveChanges(); // save database
+                return RedirectToAction("Index");
+            }
+            _cache.Set(CacheNames.error4, "You are not the owner");
+            return RedirectToAction("Index");
         }
 
         [HttpPost]
@@ -289,6 +367,16 @@ namespace PasswordWallet.Controllers
                 var encrypted = AESHelper.EncryptString(Passwd.Password, masterPassword); // encrypt with masterpassword
                 Passwd.Password = Convert.ToBase64String(encrypted); // add encypted password as a string to variable 
                 _db.Passwds.Add(Passwd); // add var to database
+
+                ActionType actionType = new ActionType()
+                {
+                    Action = "Add password to database",
+                    UserId = Passwd.UserId,
+                    Time = DateTime.Now
+                };
+                Functions.AddActionToDatabase(_db, actionType);
+
+
                 _db.SaveChanges(); // save database
                 return RedirectToAction("Index");
             }
@@ -308,6 +396,28 @@ namespace PasswordWallet.Controllers
                 data1.Add(_db.Passwds.Where(a => a.Id == pass.PasswdId).FirstOrDefault());
             }
             return Json(new { data = data1.ToList() }); // return his passwords
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetOne(int id)
+        {
+            User usr = Functions.getUser(_cache); // get logged user 
+            var data1 = await _db.PasswdHistories.Where(a => a.PasswdId == id).ToListAsync();
+            List<PasswdTimes> passwdTimes = new List<PasswdTimes>();
+            foreach (PasswdHistory passwd in data1)
+            {
+                PasswdTimes passwdTime = new PasswdTimes()
+                {
+                    Id = passwd.Id,
+                    NewPasswd = passwd.NewPasswd,
+                    OldPasswd = passwd.OldPasswd,
+                    PasswdId = passwd.PasswdId,
+                    Date = passwd.Time.ToString("dddd, dd MMMM yyyy HH:mm:ss"),
+                };
+
+                passwdTimes.Add(passwdTime);
+            }
+            return Json(new { data = passwdTimes.ToList() }); // return his history
         }
 
 

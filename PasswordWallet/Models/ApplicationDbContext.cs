@@ -9,6 +9,8 @@ namespace PasswordWallet.Models
 
         }
 
+        public DbSet<PasswdHistory> PasswdHistories { get; set; }
+        public DbSet<ActionType> ActionTypes { get; set; }
         public DbSet<SharedPasswd> SharedPasswds { get; set; }
         public DbSet<Passwd> Passwds { get; set; }
         public DbSet<User> Users { get; set; }

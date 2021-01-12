@@ -10,6 +10,19 @@ namespace PasswordWallet.Infrastructure
 {
     public class Functions
     {
+        public static void AddActionToDatabase(ApplicationDbContext db, ActionType actionType)
+        {
+            db.ActionTypes.Add(actionType);
+            db.SaveChanges();
+        }
+
+        public static void AddHistoryToDatabase(ApplicationDbContext db, PasswdHistory passwdHistory)
+        {
+            db.PasswdHistories.Add(passwdHistory);
+            db.SaveChanges();
+        }
+
+
         public static User getUser(IMemoryCache cache)
         {
             User Usr = cache.Get(CacheNames.user) as User;

@@ -12,28 +12,32 @@ function loadDataTable() {
             "datatype": "json"
         },
         "columns": [
-            { "data": "login", "width": "20%" },
+            { "data": "login", "width": "10%" },
             { "data": "password", "width": "20%" },
-            { "data": "webAddress", "width": "20%" },
+            { "data": "webAddress", "width": "15%" },
             {
                 "data": "id",
                 "render": function (data) {
                     return `<div class="text-center">
-                        <a class='btn btn-success text-white' style='cursor:pointer; width:90px;'
+                        <a class='btn btn-success text-white' style='cursor:pointer; width:80px;'
                             href="/passwd/editpassword?id=${data}">
                             Edit
                         </a>
-                        <a class='btn btn-primary text-white' style='cursor:pointer; width:90px;'
+                        <a class='btn btn-primary text-white' style='cursor:pointer; width:80px;'
                             href="/passwd/share?id=${data}">
                             Share
                         </a>
-                        <a class='btn btn-warning text-white' style='cursor:pointer; width:90px;'
+                        <a class='btn btn-warning text-white' style='cursor:pointer; width:80px;'
                             href="/passwd/decrypt?id=${data}">
                             Decrypt
                         </a>
-                        <a class='btn btn-danger text-white' style='cursor:pointer; width:70px;'
+                        <a class='btn btn-danger text-white' style='cursor:pointer; width:80px;'
                             onclick=Delete('/passwd/delete?id='+${data})>
                             Delete
+                        </a>
+                        <a class='btn btn-dark text-white' style='cursor:pointer; width:80px;'
+                            href="/passwd/history?id=${data}">
+                            History
                         </a>
                         </div>`;
                 }, "width": "40%"
